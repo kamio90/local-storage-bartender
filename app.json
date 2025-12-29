@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "local-storage-bartender",
+    "name": "Bartender Storage",
     "slug": "local-storage-bartender",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -13,18 +13,35 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.localstorage.bartender",
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app needs camera access to scan alcohol bottle labels.",
+        "NSPhotoLibraryUsageDescription": "This app needs access to your photos to select bottle images.",
+        "NSPhotoLibraryAddUsageDescription": "This app needs permission to save photos of your bottles."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "package": "com.localstorage.bartender",
+      "permissions": ["CAMERA", "READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE"],
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Bartender Storage to access your camera to scan bottle labels."
+        }
+      ],
+      "expo-sqlite"
+    ]
   }
 }
