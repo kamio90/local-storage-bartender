@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Image, ScrollView, Alert } from 'react-native';
-import { TextInput, Button, SegmentedButtons, Text } from 'react-native-paper';
+import { TextInput, Button, Text, Chip, ProgressBar } from 'react-native-paper';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { AlcoholCategory } from '../types';
-import { recognizeTextFromImage, classifyAlcoholFromText, extractBottleName } from '../ml/textRecognition';
+import { processBottleImage } from '../ml/textRecognition';
 import { saveImageLocally } from '../utils/storage';
 import { addBottle } from '../database/bottleOperations';
 
@@ -30,6 +30,8 @@ export default function AddBottleScreen() {
   const [notes, setNotes] = useState('');
   const [isProcessing, setIsProcessing] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [confidence, setConfidence] = useState(0);
+  const [detectedInfo, setDetectedInfo] = useState<string>('');
 
   useEffect(() => {
     processImage();
@@ -37,17 +39,32 @@ export default function AddBottleScreen() {
 
   const processImage = async () => {
     try {
-      // Try OCR
-      const recognizedText = await recognizeTextFromImage(photoUri);
+      // Use enhanced OCR with confidence scoring
+      const result = await processBottleImage(photoUri);
 
-      if (recognizedText) {
-        // Extract bottle name
-        const extractedName = extractBottleName(recognizedText);
-        setName(extractedName);
+      if (result.extractedName) {
+        setName(result.extractedName);
+      }
 
-        // Classify alcohol type
-        const detectedCategory = classifyAlcoholFromText(recognizedText);
-        setCategory(detectedCategory);
+      if (result.classification.category !== 'other') {
+        setCategory(result.classification.category);
+      }
+
+      setConfidence(result.confidence);
+
+      // Build info message
+      if (result.confidence > 0) {
+        const parts = [];
+        if (result.extractedName) {
+          parts.push(`Name: ${result.extractedName}`);
+        }
+        if (result.classification.matchedKeyword) {
+          parts.push(`Detected: ${result.classification.matchedKeyword}`);
+        }
+        setDetectedInfo(parts.join(' • '));
+      } else {
+        setDetectedInfo('Could not detect text - please enter manually');
+      }
       }
     } catch (error) {
       console.error('OCR processing error:', error);
@@ -85,13 +102,58 @@ export default function AddBottleScreen() {
     }
   };
 
+  const getConfidenceColor = () => {
+    if (confidence >= 0.7) return '#4CAF50';
+    if (confidence >= 0.4) return '#FF9800';
+    return '#F44336';
+  };
+
+  const getConfidenceLabel = () => {
+    if (confidence >= 0.7) return 'High Confidence';
+    if (confidence >= 0.4) return 'Medium Confidence';
+    if (confidence > 0) return 'Low Confidence';
+    return 'Manual Entry Required';
+  };
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.content}>
         <Image source={{ uri: photoUri }} style={styles.image} />
 
-        {isProcessing && (
-          <Text style={styles.processingText}>Analyzing image...</Text>
+        {isProcessing ? (
+          <>
+            <Text style={styles.processingText}>Analyzing image with local AI...</Text>
+            <ProgressBar indeterminate style={styles.progressBar} />
+          </>
+        ) : (
+          <>
+            {confidence > 0 && (
+              <View style={styles.confidenceSection}>
+                <View style={styles.confidenceHeader}>
+                  <Chip
+                    mode="flat"
+                    style={{ backgroundColor: getConfidenceColor() }}
+                    textStyle={{ color: 'white' }}
+                  >
+                    {getConfidenceLabel()}
+                  </Chip>
+                  <Text style={styles.confidenceText}>
+                    {Math.round(confidence * 100)}%
+                  </Text>
+                </View>
+                {detectedInfo && (
+                  <Text style={styles.detectedInfo}>{detectedInfo}</Text>
+                )}
+              </View>
+            )}
+            {confidence === 0 && (
+              <View style={styles.manualEntryBanner}>
+                <Text style={styles.manualEntryText}>
+                  ℹ️ {detectedInfo}
+                </Text>
+              </View>
+            )}
+          </>
         )}
 
         <TextInput
@@ -100,6 +162,7 @@ export default function AddBottleScreen() {
           onChangeText={setName}
           mode="outlined"
           style={styles.input}
+          placeholder="Enter bottle name"
         />
 
         <Text style={styles.label}>Category *</Text>
@@ -165,8 +228,44 @@ const styles = StyleSheet.create({
   },
   processingText: {
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: 8,
     fontStyle: 'italic',
+  },
+  progressBar: {
+    marginBottom: 16,
+  },
+  confidenceSection: {
+    backgroundColor: '#F5F5F5',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  confidenceHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  confidenceText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  detectedInfo: {
+    fontSize: 13,
+    opacity: 0.8,
+    fontStyle: 'italic',
+  },
+  manualEntryBanner: {
+    backgroundColor: '#FFF3CD',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF9800',
+  },
+  manualEntryText: {
+    color: '#856404',
+    fontSize: 14,
   },
   input: {
     marginBottom: 16,

@@ -4,10 +4,16 @@ A standalone React Native + Expo iOS application for managing your home bar inve
 
 ## Features
 
-### Photo Recognition & Inventory (100% LOCAL)
+### Photo Recognition & Inventory (100% LOCAL AI)
 - Take photos or upload images of alcohol bottles
-- Local OCR text recognition to read bottle labels
-- Keyword-based classification to identify alcohol category (vodka, whiskey, rum, etc.)
+- **ML Kit OCR** - Real text recognition from bottle labels
+- **Advanced AI Classification** - Intelligent alcohol category detection with:
+  - 100+ brand name recognition (Absolut, Jack Daniel's, Bacardi, etc.)
+  - Multi-language support (English, Polish, Russian, Spanish, etc.)
+  - **Confidence scoring** - Shows AI certainty (High/Medium/Low)
+  - Smart keyword matching with brand-specific detection
+  - Support for 10 alcohol categories
+- **Smart Name Extraction** - AI extracts brand name from label text with scoring algorithm
 - SQLite database for persistent storage - survives app restarts
 - View collection with thumbnails and details
 - Mark bottles as full, low, or empty
@@ -198,24 +204,62 @@ All recipes include:
 - Glass type recommendations
 - Difficulty level
 
-## Local ML/OCR
+## Local AI/ML Features
 
-The app uses a simple but effective approach:
+The app uses **advanced local AI** with no cloud dependencies:
 
-1. **Text Recognition**: Placeholder for OCR (extensible with @react-native-ml-kit/text-recognition)
-2. **Classification**: Keyword-based matching for alcohol categories
-3. **Name Extraction**: Text parsing to identify bottle names
-4. **Manual Override**: Users can always edit detected information
+### 1. ML Kit OCR Text Recognition
+- **Real-time text detection** from bottle labels using ML Kit
+- Automatically processes photos to extract all visible text
+- Works offline - no internet required
+- Falls back gracefully if ML Kit unavailable
 
-### Extending with ML Kit
+### 2. Intelligent Alcohol Classification
+- **100+ recognized brands** across all categories:
+  - **Vodka**: Absolut, Grey Goose, Belvedere, Smirnoff, Tito's, etc.
+  - **Whiskey**: Jack Daniel's, Jim Beam, Johnnie Walker, Jameson, etc.
+  - **Rum**: Bacardi, Captain Morgan, Havana Club, etc.
+  - **Gin**: Tanqueray, Bombay Sapphire, Hendrick's, etc.
+  - **Tequila**: Patrón, Don Julio, Casamigos, etc.
+  - Plus Brandy, Liqueur, Wine, Beer, and specialty spirits
 
-To add full OCR capabilities:
+- **Multi-language support**:
+  - English, Polish (wódka), Russian (водка), Spanish (ron), French (rhum)
+  - International brand name recognition
 
-```bash
-npm install @react-native-ml-kit/text-recognition
+- **Smart scoring algorithm**:
+  - Longer brand names = higher confidence (more specific)
+  - Exact word matches get bonus points
+  - Multiple keyword matches increase accuracy
+
+### 3. Confidence Scoring System
+- **High Confidence (70%+)**: Strong brand/keyword match - green badge
+- **Medium Confidence (40-69%)**: Partial match - orange badge
+- **Low Confidence (<40%)**: Weak match - red badge
+- **Visual feedback**: Shows detected keywords and confidence percentage
+
+### 4. Advanced Name Extraction
+- Intelligent line scoring to find brand name
+- Filters out noise (ABV%, volume measurements, generic terms)
+- Prioritizes first lines and capitalized text
+- Brand name recognition boosts confidence
+
+### 5. Manual Override
+- All AI suggestions can be edited
+- Fallback to manual entry if OCR fails
+- User always has final control
+
+### ML Kit Integration
+
+The app includes ML Kit OCR integration out of the box:
+
+```typescript
+// Automatic OCR processing in src/ml/textRecognition.ts
+const result = await processBottleImage(imageUri);
+// Returns: { text, extractedName, classification, confidence }
 ```
 
-Then update `src/ml/textRecognition.ts` to use the actual ML Kit API.
+If ML Kit is not available, the app gracefully falls back to manual entry mode.
 
 ## App Structure
 
